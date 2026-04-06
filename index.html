@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 北九州盛夏之旅</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #E63946; /* 日本太陽紅 */
+            --secondary-color: #457B9D; /* 九州海藍 */
+            --accent-color: #F1FAEE;
+            --bg-color: #F8F9FA;
+            --card-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: #1D3557;
+            background-image: 
+                radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 和風裝飾 */
+        .washi-tape {
+            height: 30px;
+            width: 120px;
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            background: linear-gradient(45deg, #f87171 25%, #fca5a5 25%, #fca5a5 50%, #f87171 50%, #f87171 75%, #fca5a5 75%, #fca5a5 100%);
+            background-size: 20px 20px;
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .day-card {
+            transition: all 0.3s ease;
+            border-left: 5px solid transparent;
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border-left-color: var(--primary-color);
+        }
+
+        .budget-row:nth-child(even) {
+            background-color: rgba(69, 123, 157, 0.05);
+        }
+
+        /* 動畫 */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        .stamp {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #E63946;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #E63946;
+            font-weight: bold;
+            font-size: 12px;
+            transform: rotate(-15deg);
+            opacity: 0.7;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen pb-20">
+        <!-- Header -->
+        <header class="relative h-64 flex items-center justify-center overflow-hidden bg-slate-900">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center opacity-60"></div>
+            <div class="relative z-10 text-center text-white p-4">
+                <h1 class="text-4xl md:text-6xl font-bold mb-2 tracking-widest">2026 北九州盛夏之旅</h1>
+                <p class="text-lg md:text-xl opacity-90">福岡 · 大分 · 熊本 · 高千穗</p>
+                <div class="mt-4 inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full text-sm font-medium">
+                    距離出發還有 {{ countdownDays }} 天
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-sm shadow-sm">
+            <div class="max-w-4xl mx-auto flex justify-around">
+                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                    class="py-4 px-2 text-sm md:text-base transition-colors"
+                    :class="{ 'tab-active': activeTab === tab.id }">
+                    <i :class="tab.icon" class="mr-1"></i> {{ tab.name }}
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto p-4 mt-6">
+            
+            <!-- 1. Itinerary Section -->
+            <div v-if="activeTab === 'itinerary'" class="space-y-8">
+                <div v-for="(day, index) in itinerary" :key="index" class="relative">
+                    <div class="washi-tape" v-if="index % 2 === 0"></div>
+                    <div class="day-card bg-white rounded-xl p-6 shadow-sm relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800">Day {{ index + 1 }} · {{ day.date }} ({{ day.weekday }})</h3>
+                                <p class="text-primary-color font-medium"><i class="fa-solid fa-location-dot"></i> {{ day.mainLocation }}</p>
+                            </div>
+                            <span class="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">{{ day.stay }}</span>
+                        </div>
+                        
+                        <ul class="space-y-4">
+                            <li v-for="(event, eIdx) in day.events" :key="eIdx" class="flex gap-4">
+                                <span class="text-xs font-bold text-slate-400 mt-1 whitespace-nowrap">{{ event.type }}</span>
+                                <div class="flex-1">
+                                    <p class="text-slate-700 leading-relaxed">{{ event.desc }}</p>
+                                    <p v-if="event.note" class="text-sm text-slate-400 mt-1 italic">{{ event.note }}</p>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="stamp">
+                            <span>KYUSHU<br>SUMMER</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Budget Section -->
+            <div v-if="activeTab === 'budget'" class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">費用預估</h2>
+                    <div class="text-right">
+                        <p class="text-sm text-slate-500">匯率預設：1 JPY = 0.2 TWD</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-slate-50 p-4 rounded-lg text-center border-b-4 border-secondary-color">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">總預算 (JPY)</p>
+                        <p class="text-xl font-bold">¥{{ totalBudgetJPY.toLocaleString() }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg text-center border-b-4 border-primary-color">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">約合台幣 (TWD)</p>
+                        <p class="text-xl font-bold text-primary-color">${{ Math.round(totalBudgetJPY * exchangeRate).toLocaleString() }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg text-center border-b-4 border-yellow-400">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">主要住宿費</p>
+                        <p class="text-xl font-bold">¥{{ accommodationTotal.toLocaleString() }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-lg text-center border-b-4 border-green-500">
+                        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">機票概估</p>
+                        <p class="text-xl font-bold">Included</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-sm border-b">
+                                <th class="pb-2 font-medium">項目</th>
+                                <th class="pb-2 font-medium">分類</th>
+                                <th class="pb-2 font-medium text-right">金額 (JPY)</th>
+                                <th class="pb-2 font-medium text-right">台幣 (0.2)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, idx) in budgetItems" :key="idx" class="budget-row">
+                                <td class="py-3 font-medium">{{ item.name }}</td>
+                                <td class="py-3 text-sm text-slate-500">{{ item.category }}</td>
+                                <td class="py-3 text-right">¥{{ item.amount.toLocaleString() }}</td>
+                                <td class="py-3 text-right text-slate-400 text-sm">${{ Math.round(item.amount * 0.2).toLocaleString() }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Shopping Section -->
+            <div v-if="activeTab === 'shopping'" class="space-y-6">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-2xl font-bold mb-4">藥妝與好物清單</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div v-for="(item, idx) in shoppingList" :key="idx" 
+                             class="flex items-center p-3 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                             @click="item.done = !item.done">
+                            <div class="w-6 h-6 rounded border flex items-center justify-center mr-3"
+                                 :class="item.done ? 'bg-green-500 border-green-500 text-white' : 'border-slate-300'">
+                                <i v-if="item.done" class="fa-solid fa-check text-xs"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium" :class="{ 'line-through text-slate-400': item.done }">{{ item.name }}</p>
+                                <p class="text-xs text-slate-400">{{ item.note }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs bg-slate-100 px-2 py-1 rounded">{{ item.category }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-2xl font-bold mb-4">想吃 & 想買的店</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div v-for="(shop, idx) in shops" :key="idx" class="p-4 bg-orange-50 border border-orange-100 rounded-xl relative">
+                            <i class="fa-solid fa-thumbtack absolute -top-2 -right-2 text-orange-300"></i>
+                            <h4 class="font-bold text-orange-800">{{ shop.name }}</h4>
+                            <p class="text-xs text-orange-600 mb-2">{{ shop.location }}</p>
+                            <p class="text-sm text-slate-600">{{ shop.desc }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer Info -->
+        <footer class="mt-12 text-center text-slate-400 text-sm pb-10">
+            <p>© 2026 北九州盛夏自駕之旅 · 祝旅途愉快</p>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const activeTab = ref('itinerary');
+                const exchangeRate = ref(0.2);
+                
+                const tabs = [
+                    { id: 'itinerary', name: '行程安排', icon: 'fa-solid fa-calendar-days' },
+                    { id: 'budget', name: '預算估計', icon: 'fa-solid fa-calculator' },
+                    { id: 'shopping', name: '購物與美食', icon: 'fa-solid fa-cart-shopping' }
+                ];
+
+                const countdownDays = computed(() => {
+                    const start = new Date('2026-08-22');
+                    const today = new Date();
+                    const diff = start - today;
+                    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                });
+
+                const itinerary = ref([
+                    {
+                        date: '8/22', weekday: 'Sat', mainLocation: '福岡 → 大分', stay: '住宿：ホテル日航大分',
+                        events: [
+                            { type: '交通', desc: 'JX840 台北/福岡 09:35/13:05', note: '租車後開車前往大分 (約2hr)' },
+                            { type: '食', desc: '大分市區晚餐', note: '' },
+                            { type: '其他', desc: '飯店停車 (1000 JPY)', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/23', weekday: 'Sun', mainLocation: '大分 → 別府', stay: '住宿：野乃別府 (天然温泉)',
+                        events: [
+                            { type: '景點', desc: '海之卵水族館 (Umitamago)', note: '親子推薦' },
+                            { type: '景點', desc: '別府地獄組合 (海地獄、血池地獄等)', note: '' },
+                            { type: '食', desc: '別府在地晚餐', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/24', weekday: 'Mon', mainLocation: '別府 → 由布院', stay: '住宿：由布院秀峰館',
+                        events: [
+                            { type: '景點', desc: '九州自然動物園 (African Safari)', note: '預約 15:00 叢林巴士' },
+                            { type: '景點', desc: '由布院金鱗湖散策', note: '' },
+                            { type: '食', desc: '飯店和食晚餐 (18:00前入館)', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/25', weekday: 'Tue', mainLocation: '由布院 → 高千穗', stay: '住宿：ホテル グレイトフル高千穂',
+                        events: [
+                            { type: '景點', desc: '黑川溫泉散策', note: '穿插於路程中' },
+                            { type: '交通', desc: '開車往高千穗', note: '' },
+                            { type: '食', desc: '晚餐 (高千穗地區提早採買)', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/26', weekday: 'Wed', mainLocation: '高千穗 → 熊本', stay: '住宿：三井花園飯店熊本',
+                        events: [
+                            { type: '景點', desc: '高千穗峽划船', note: '需提早線上預約' },
+                            { type: '景點', desc: '阿蘇火山大觀峰', note: '' },
+                            { type: '食', desc: '熊本勝烈亭豬排', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/27', weekday: 'Thu', mainLocation: '熊本 → 柳川 → 福岡', stay: '住宿：The Ritz-Carlton Fukuoka',
+                        events: [
+                            { type: '景點', desc: '柳川遊船', note: '體驗水都風情' },
+                            { type: '景點', desc: '太宰府天滿宮', note: '吃梅枝餅' },
+                            { type: '食', desc: '柳川鰻魚飯', note: '若松屋或本吉屋' }
+                        ]
+                    },
+                    {
+                        date: '8/28', weekday: 'Fri', mainLocation: '福岡購物日', stay: '住宿：The Ritz-Carlton Fukuoka',
+                        events: [
+                            { type: '購物', desc: 'Bic Camera / Yodobashi / 樂天', note: '電器採買' },
+                            { type: '購物', desc: '天神商圈 / 唐吉訶德', note: '' },
+                            { type: '食', desc: '福岡一蘭總店或屋台體驗', note: '' }
+                        ]
+                    },
+                    {
+                        date: '8/29', weekday: 'Sat', mainLocation: '福岡 → 台北', stay: '返家',
+                        events: [
+                            { type: '交通', desc: '前往福岡機場 (FUK)', note: '還車後搭接駁' },
+                            { type: '交通', desc: 'JX841 福岡/台北 14:45/16:05', note: '' }
+                        ]
+                    }
+                ]);
+
+                const budgetItems = ref([
+                    { name: 'ホテル日航大分', category: '住', amount: 17650 },
+                    { name: '野乃別府', category: '住', amount: 28200 },
+                    { name: '由布院秀峰館', category: '住', amount: 40920 },
+                    { name: 'グレイトフル高千穂', category: '住', amount: 22000 },
+                    { name: '三井花園熊本', category: '住', amount: 19500 },
+                    { name: 'Ritz-Carlton Fukuoka (2晚)', category: '住', amount: 180000 },
+                    { name: '別府地獄組合門票', category: '門票', amount: 8000 },
+                    { name: '海之卵水族館', category: '門票', amount: 7500 },
+                    { name: '九州自然動物園', category: '門票', amount: 12000 },
+                    { name: '租車 8 天 (預估)', category: '交通', amount: 85000 },
+                    { name: '油錢 & 過路費', category: '交通', amount: 25000 },
+                    { name: '每日餐飲 (預估)', category: '食', amount: 100000 }
+                ]);
+
+                const totalBudgetJPY = computed(() => {
+                    return budgetItems.value.reduce((sum, item) => sum + item.amount, 0);
+                });
+
+                const accommodationTotal = computed(() => {
+                    return budgetItems.value
+                        .filter(item => item.category === '住')
+                        .reduce((sum, item) => sum + item.amount, 0);
+                });
+
+                const shoppingList = ref([
+                    { name: 'ベンザブロックL錠 (45錠)', note: '感冒藥', category: '藥妝', done: false },
+                    { name: 'DHC 持續型維他命C', note: '60日份', category: '保健', done: false },
+                    { name: 'DHC 維他命D', note: '60日份', category: '保健', done: false },
+                    { name: 'DHC 速攻藍莓', note: '20日份', category: '保健', done: false },
+                    { name: '第一三共 MINON UV乳液', note: '80ml', category: '藥妝', done: false },
+                    { name: '茅乃舍 茶碗蒸元 (4袋)', note: '必買料理包', category: '食品', done: false },
+                    { name: '茅乃舍 白胡麻沙拉醬', note: '', category: '食品', done: false },
+                    { name: '茅乃舍 經典高湯包', note: '大包裝', category: '食品', done: false }
+                ]);
+
+                const shops = ref([
+                    { name: '茅乃舍 福岡岩田屋店', location: '天神', desc: '福岡起源的高湯名店，必買茶碗蒸與高湯包。' },
+                    { name: 'BicCamera 天神店', location: '天神', desc: '採買電器與藥妝，記得使用優惠券。' },
+                    { name: 'Pokémon Center', location: '博多車站 AMU 8F', desc: '幫小朋友看最新公仔。' },
+                    { name: '勝烈亭 熊本本店', location: '熊本', desc: '日本排名領先的豬排店，炸蝦也非常厲害。' },
+                    { name: '若松屋 鰻魚飯', location: '柳川', desc: '蒸籠鰻魚飯創始店之一，口感綿密。' }
+                ]);
+
+                return {
+                    activeTab, tabs, countdownDays, itinerary, budgetItems, 
+                    totalBudgetJPY, accommodationTotal, exchangeRate, 
+                    shoppingList, shops
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
